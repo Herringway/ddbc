@@ -1,21 +1,18 @@
-name: Scheduled Builds
+name: Windows Builds
 
 # Overall ddbc should work on the last 10 minor compiler releases (same as Vibe.d) but for
 # simplicity and speed of the CI most builds should be covered by Linux with the
 # Windows and MacOS pipelines just testing with the last few compiler versions.
 
-on:
-  schedule:
-    - cron: '30 7 1 * *'
+on: [push, pull_request]
 
 jobs:
   test:
-    name: ${{ matrix.compiler }} on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.compiler }}
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
         compiler:
           - dmd-latest
           - ldc-latest
@@ -29,19 +26,11 @@ jobs:
         with:
           compiler: ${{ matrix.compiler }}
 
-      - name: Install dependencies on Ubuntu
-        if: startsWith(matrix.os, 'ubuntu')
-        run: sudo apt-get update && sudo apt-get install libev-dev libpq-dev libevent-dev libsqlite3-dev -y
-
-      - name: Install dependencies on Mac OSX
-        if: startsWith(matrix.os, 'macos')
-        run: brew bundle
-
       - name: Upgrade dub dependencies
         if: startsWith(matrix.os, 'windows')
         uses: WebFreak001/dub-upgrade@v0.1
 
-      # x86 (Windows Only)
+      # Windows x86 builds
       - name: dub test with SQLite config (x86)
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: dub test --config=SQLite --arch=x86
@@ -55,7 +44,7 @@ jobs:
         working-directory: example
         run: dub build --config=SQLite --arch=x86 && ./ddbctest --connection=sqlite:ddbc-test.sqlite
 
-      # x86_64 (all platforms)
+      # Windows x86_64 builds
       - name: dub test with SQLite config (x86_64)
         run: dub test --config=SQLite --arch=x86_64
         
@@ -66,7 +55,7 @@ jobs:
         working-directory: example
         run: dub build --config=SQLite --arch=x86_64 && ./ddbctest --connection=sqlite:ddbc-test.sqlite
 
-      # x86_mscoff (Windows with dmd Only)
+      # Windows x86_mscoff (dmd only)
       - name: dub test with SQLite config (x86_mscoff)
         if: ${{ startsWith(matrix.os, 'windows') && startsWith(matrix.compiler, 'dmd') }}
         run: dub test --config=SQLite --arch=x86_mscoff
@@ -82,5 +71,4 @@ jobs:
 
       # cache
       - uses: WebFreak001/dub-upgrade@v0.1
-        if: startsWith(matrix.os, 'windows')
         with: { store: true }
