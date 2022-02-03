@@ -54,6 +54,7 @@ version(USE_MYSQL) {
 
 import std.array;
 import mysql.connection : prepare;
+static import mysql.connection;
 import mysql.commands : query, exec;
 import mysql.prepared;
 import mysql.protocol.constants;
